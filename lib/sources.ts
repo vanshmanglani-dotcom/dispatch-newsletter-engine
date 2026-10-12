@@ -16,15 +16,15 @@ const gnews = (q: string) =>
 /** 20+ live sources: Indian startup/tech outlets + Google News topic queries. */
 export const RSS_SOURCES: { name: string; url: string }[] = [
   { name: "Inc42", url: "https://inc42.com/feed/" },
-  { name: "Entrackr", url: "https://entrackr.com/feed/" },
+  { name: "Entrackr (via Google News)", url: gnews("site:entrackr.com") },
   { name: "YourStory", url: "https://yourstory.com/feed" },
   { name: "ET Tech – Startups", url: "https://economictimes.indiatimes.com/tech/startups/rssfeeds/78570540.cms" },
   { name: "ET Tech – Funding", url: "https://economictimes.indiatimes.com/tech/funding/rssfeeds/78570550.cms" },
   { name: "Medianama", url: "https://www.medianama.com/feed/" },
   { name: "TechCrunch India", url: "https://techcrunch.com/tag/india/feed/" },
   { name: "Livemint Companies", url: "https://www.livemint.com/rss/companies" },
-  { name: "Moneycontrol Business", url: "https://www.moneycontrol.com/rss/business.xml" },
-  { name: "Business Standard Companies", url: "https://www.business-standard.com/rss/companies-101.rss" },
+  { name: "Moneycontrol Startups (via Google News)", url: gnews("site:moneycontrol.com startup") },
+  { name: "Business Standard Startups (via Google News)", url: gnews("site:business-standard.com startup") },
   { name: "The Hindu BusinessLine", url: "https://www.thehindubusinessline.com/news/feeder/default.rss" },
   { name: "Rest of World", url: "https://restofworld.org/feed/latest/" },
   { name: "Google News: Indian startup funding", url: gnews("Indian startup funding") },
