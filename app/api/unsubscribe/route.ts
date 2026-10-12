@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "../../../lib/db";
+import { q } from "../../../lib/db";
 
 export const dynamic = "force-dynamic";
 
 async function unsubscribe(token: string | null) {
   if (!token || !/^[0-9a-f-]{36}$/i.test(token)) return false;
-  const { data } = await db().from("subscribers").update({ status: "unsubscribed", updated_at: new Date().toISOString() })
-    .eq("unsub_token", token).select("id");
-  return !!data?.length;
+  const rows = await q`update subscribers set status = 'unsubscribed', updated_at = now() where unsub_token = ${token}::uuid returning id`;
+  return rows.length > 0;
 }
 
 const page = (msg: string) =>

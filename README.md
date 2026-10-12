@@ -18,11 +18,11 @@ Bounces: Gmail `mailer-daemon` messages and "unsubscribe" replies are read over 
 
 ## Stack
 
-Next.js 15 (App Router, TypeScript) on Vercel · Vercel Cron · Supabase Postgres · Gemini Flash (`@google/genai`) · Telegram Bot API · Gmail SMTP and IMAP (nodemailer, imapflow) · Zod
+Next.js 15 (App Router, TypeScript) on Vercel · Vercel Cron · Neon Postgres (`@neondatabase/serverless`) · Gemini Flash (`@google/genai`) · Telegram Bot API · Gmail SMTP and IMAP (nodemailer, imapflow) · Zod
 
 ## Setup
 
-1. **Supabase:** create a project, open SQL Editor, paste `supabase/schema.sql`, and run it.
+1. **Neon:** create a project, open the SQL Editor, paste `db/schema.sql`, and run it. Copy the pooled connection string into `DATABASE_URL`.
 2. **Gemini:** get an API key from https://aistudio.google.com/apikey.
 3. **Telegram:** in @BotFather send `/newbot` and copy the token.
 4. **Gmail:** turn on 2-Step Verification, then create an App Password at https://myaccount.google.com/apppasswords.

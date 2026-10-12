@@ -1,11 +1,11 @@
 -- The Dispatch · Newsletter Intelligence Engine
--- Run this once in Supabase → SQL Editor → New query → Run.
+-- Run this once in Neon → SQL Editor (paste all, Run).
 
 create extension if not exists pgcrypto;
 
 -- 1. Every article ingested Mon–Wed. url_hash is unique, so the same link is never stored twice.
 create table if not exists articles (
-  id            bigserial primary key,
+  id            serial primary key,
   url           text not null,
   url_hash      text not null unique,
   title         text not null,
@@ -20,7 +20,7 @@ create index if not exists articles_week_idx on articles (week_key);
 
 -- 2. One row per weekly issue. Status flow: PENDING → CONFIRMED → SENDING → SENT  (or SKIPPED)
 create table if not exists issues (
-  id                bigserial primary key,
+  id                serial primary key,
   week_key          text not null unique,
   status            text not null default 'PENDING'
                     check (status in ('PENDING','CONFIRMED','SENDING','SENT','SKIPPED')),
@@ -33,22 +33,22 @@ create table if not exists issues (
 
 -- 3. Stories inside an issue. ALTERNATE rows are Gemini's ranked back-ups used by "Swap".
 create table if not exists issue_stories (
-  id                   bigserial primary key,
-  issue_id             bigint not null references issues(id) on delete cascade,
-  article_id           bigint not null references articles(id),
+  id                   serial primary key,
+  issue_id             int not null references issues(id) on delete cascade,
+  article_id           int not null references articles(id),
   position             int not null default 0,
   topic                text,
   reason               text,
   commentary           text,
   status               text not null default 'PROPOSED'
                        check (status in ('PROPOSED','APPROVED','REMOVED','SWAPPED','ALTERNATE')),
-  telegram_message_id  bigint,
+  telegram_message_id  int,
   unique (issue_id, article_id)
 );
 
 -- 4. Subscriber list. Bounced / unsubscribed people are never emailed again.
 create table if not exists subscribers (
-  id           bigserial primary key,
+  id           serial primary key,
   email        text not null unique,
   name         text,
   status       text not null default 'active' check (status in ('active','unsubscribed','bounced')),
@@ -59,8 +59,8 @@ create table if not exists subscribers (
 
 -- 5. One delivery row per (issue, subscriber) so a send can resume without double-sending.
 create table if not exists deliveries (
-  issue_id       bigint not null references issues(id) on delete cascade,
-  subscriber_id  bigint not null references subscribers(id) on delete cascade,
+  issue_id       int not null references issues(id) on delete cascade,
+  subscriber_id  int not null references subscribers(id) on delete cascade,
   status         text not null default 'sent' check (status in ('sent','failed')),
   error          text,
   sent_at        timestamptz not null default now(),
@@ -94,11 +94,3 @@ $$) on conflict (id) do nothing;
 
 -- Demo subscriber (replace with your own email to receive test issues)
 -- insert into subscribers (email, name) values ('you@example.com', 'Test Reader');
-
--- Server-side only: the app uses the service-role key, so lock tables from the public anon key.
-alter table articles      enable row level security;
-alter table issues        enable row level security;
-alter table issue_stories enable row level security;
-alter table subscribers   enable row level security;
-alter table deliveries    enable row level security;
-alter table style_guide   enable row level security;

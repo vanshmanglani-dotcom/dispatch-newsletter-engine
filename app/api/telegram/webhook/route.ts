@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, must, type Issue, type Story } from "../../../../lib/db";
+import { q, one } from "../../../../lib/db";
 import { answerCallback, sendMessage, editMessage } from "../../../../lib/telegram";
 import {
-  getIssue, getStories, liveStories, refreshStoryMessage, swapStory, candidatesForWeek,
+  getIssue, getIssueById, getStory, getStories, liveStories, refreshStoryMessage, swapStory, candidatesForWeek,
   getStyleGuide, controlText, controlKeyboard, sendDraftToTelegram,
 } from "../../../../lib/issue";
 import { pickReplacement } from "../../../../lib/gemini";
@@ -18,11 +18,6 @@ type Update = {
 };
 
 const ok = () => NextResponse.json({ ok: true });
-
-async function storyWithIssue(storyId: number) {
-  const s = must(await db().from("issue_stories").select("*, articles(title), issues(*)").eq("id", storyId).single()) as Story & { issues: Issue; articles: { title: string } };
-  return s;
-}
 
 export async function POST(req: NextRequest) {
   if (req.headers.get("x-telegram-bot-api-secret-token") !== process.env.TELEGRAM_WEBHOOK_SECRET) {
@@ -56,11 +51,12 @@ export async function POST(req: NextRequest) {
       }
       // Reply to a story message = replace its commentary.
       if (m.reply_to_message && m.text) {
-        const story = must(await db().from("issue_stories").select("id, issue_id, issues(status)")
-          .eq("telegram_message_id", m.reply_to_message.message_id).maybeSingle()) as unknown as { id: number; issues: { status: string } } | null;
+        const story = await one<{ id: number; issue_status: string }>`
+          select s.id, i.status as issue_status from issue_stories s join issues i on i.id = s.issue_id
+          where s.telegram_message_id = ${m.reply_to_message.message_id} order by s.id desc limit 1`;
         if (!story) { await sendMessage("Reply to a story message to edit its commentary."); return ok(); }
-        if (story.issues.status !== "PENDING") { await sendMessage("This issue is already confirmed — edits are locked."); return ok(); }
-        must(await db().from("issue_stories").update({ commentary: m.text.trim(), status: "APPROVED" }).eq("id", story.id));
+        if (story.issue_status !== "PENDING") { await sendMessage("This issue is already confirmed — edits are locked."); return ok(); }
+        await q`update issue_stories set commentary = ${m.text.trim()}, status = 'APPROVED' where id = ${story.id}`;
         await refreshStoryMessage(story.id);
         await sendMessage("✏️ Commentary updated and story approved.", undefined, m.message_id);
       }
@@ -74,20 +70,21 @@ export async function POST(req: NextRequest) {
     const id = Number(rawId);
 
     if (["a", "r", "s"].includes(action)) {
-      const s = await storyWithIssue(id);
-      if (s.issues.status !== "PENDING") { await answerCallback(cq.id, "Issue is locked"); return ok(); }
+      const s = await getStory(id);
+      if (!s) { await answerCallback(cq.id, "Story not found"); return ok(); }
+      if (s.issue_status !== "PENDING") { await answerCallback(cq.id, "Issue is locked"); return ok(); }
       if (action === "a") {
-        must(await db().from("issue_stories").update({ status: "APPROVED" }).eq("id", id));
+        await q`update issue_stories set status = 'APPROVED' where id = ${id}`;
         await refreshStoryMessage(id);
         await answerCallback(cq.id, "Approved ✅");
       } else if (action === "r") {
-        must(await db().from("issue_stories").update({ status: "REMOVED" }).eq("id", id));
+        await q`update issue_stories set status = 'REMOVED' where id = ${id}`;
         await refreshStoryMessage(id);
         await answerCallback(cq.id, "Removed");
       } else {
         await answerCallback(cq.id, "Finding a replacement…");
         const newId = await swapStory(id, async () => {
-          const { candidates } = await candidatesForWeek(s.issues.week_key);
+          const { candidates } = await candidatesForWeek(s.week_key);
           const used = new Set((await getStories(s.issue_id)).map((x) => x.article_id));
           const pool = candidates.filter((c) => !used.has(c.id));
           if (!pool.length) return null;
@@ -101,11 +98,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "c") {
-      const issue = must(await db().from("issues").select("*").eq("id", id).single()) as Issue;
-      if (issue.status !== "PENDING") { await answerCallback(cq.id, `Already ${issue.status}`); return ok(); }
+      const issue = await getIssueById(id);
+      if (!issue || issue.status !== "PENDING") { await answerCallback(cq.id, `Already ${issue?.status}`); return ok(); }
       const live = await liveStories(id);
       const topics = new Set(live.map((x) => (x.topic ?? "").toLowerCase())).size;
-      const { count } = await db().from("subscribers").select("id", { count: "exact", head: true }).eq("status", "active");
+      const count = (await one<{ n: number }>`select count(*)::int as n from subscribers where status = 'active'`)?.n ?? 0;
       const warn = [
         live.length < 8 || live.length > 10 ? `⚠️ ${live.length} stories (target is 8–10).` : "",
         topics < 3 ? `⚠️ Only ${topics} topic areas (target ≥3).` : "",
@@ -119,13 +116,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "y") {
-      const issue = must(await db().from("issues").select("*").eq("id", id).single()) as Issue;
-      if (issue.status !== "PENDING") { await answerCallback(cq.id, `Already ${issue.status}`); return ok(); }
-      must(await db().from("issue_stories").update({ status: "APPROVED" }).eq("issue_id", id).eq("status", "PROPOSED"));
+      const issue = await getIssueById(id);
+      if (!issue || issue.status !== "PENDING") { await answerCallback(cq.id, `Already ${issue?.status}`); return ok(); }
+      await q`update issue_stories set status = 'APPROVED' where issue_id = ${id} and status = 'PROPOSED'`;
       const live = await liveStories(id);
       // Renumber final order and lock every story message.
-      for (const [i, s] of live.entries()) must(await db().from("issue_stories").update({ position: i }).eq("id", s.id));
-      must(await db().from("issues").update({ status: "CONFIRMED", confirmed_at: new Date().toISOString() }).eq("id", id));
+      for (const [i, s] of live.entries()) await q`update issue_stories set position = ${i} where id = ${s.id}`;
+      await q`update issues set status = 'CONFIRMED', confirmed_at = now() where id = ${id} and status = 'PENDING'`;
       for (const s of live) await refreshStoryMessage(s.id).catch(() => undefined);
       if (cq.message) await editMessage(cq.message.message_id, `✅ <b>Confirmed.</b> ${live.length} stories will go out Thursday 8:00 AM IST.`);
       await answerCallback(cq.id, "Confirmed");

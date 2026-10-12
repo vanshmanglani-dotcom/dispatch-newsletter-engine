@@ -1,4 +1,4 @@
-import { db, type Article, type Issue } from "../lib/db";
+import { q, one, type Article, type Issue } from "../lib/db";
 import { getStories } from "../lib/issue";
 import { weekKey, fmtIST } from "../lib/time";
 
@@ -6,34 +6,27 @@ export const dynamic = "force-dynamic";
 
 async function load() {
   const wk = weekKey();
-  const d = db();
-  const [arts, weekArts, issueRes, subs, recentArts, pastIssues] = await Promise.all([
-    d.from("articles").select("id", { count: "exact", head: true }),
-    d.from("articles").select("id", { count: "exact", head: true }).eq("week_key", wk),
-    d.from("issues").select("*").eq("week_key", wk).maybeSingle(),
-    d.from("subscribers").select("status"),
-    d.from("articles").select("*").order("fetched_at", { ascending: false }).limit(15),
-    d.from("issues").select("*").order("week_key", { ascending: false }).limit(6),
+  const [counts, issue, subs, recent, past] = await Promise.all([
+    one<{ total: number; week: number }>`select count(*)::int as total, count(*) filter (where week_key = ${wk})::int as week from articles`,
+    one<Issue>`select * from issues where week_key = ${wk}`,
+    q<{ status: string; n: number }>`select status, count(*)::int as n from subscribers group by status`,
+    q<Article>`select * from articles order by fetched_at desc limit 15`,
+    q<Issue>`select * from issues order by week_key desc limit 6`,
   ]);
-  const issue = issueRes.data as Issue | null;
   const stories = issue ? await getStories(issue.id, ["PROPOSED", "APPROVED", "REMOVED"]) : [];
-  const subRows = (subs.data ?? []) as { status: string }[];
-  return {
-    wk, total: arts.count ?? 0, week: weekArts.count ?? 0, issue, stories,
-    active: subRows.filter((s) => s.status === "active").length,
-    inactive: subRows.filter((s) => s.status !== "active").length,
-    recent: (recentArts.data ?? []) as Article[], past: (pastIssues.data ?? []) as Issue[],
-  };
+  const active = subs.find((s) => s.status === "active")?.n ?? 0;
+  const inactive = subs.filter((s) => s.status !== "active").reduce((a, s) => a + s.n, 0);
+  return { wk, total: counts?.total ?? 0, week: counts?.week ?? 0, issue, stories, active, inactive, recent, past };
 }
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ sub?: string }> }) {
   const sp = await searchParams;
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return <div className="notice">Setup needed: add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables, then redeploy.</div>;
+  if (!process.env.DATABASE_URL) {
+    return <div className="notice">Setup needed: add the DATABASE_URL (Neon) environment variable, then redeploy.</div>;
   }
   let data;
   try { data = await load(); } catch (e) {
-    return <div className="notice">Database error: {(e as Error).message}. Did you run supabase/schema.sql?</div>;
+    return <div className="notice">Database error: {(e as Error).message}. Did you run db/schema.sql in Neon?</div>;
   }
   const { wk, total, week, issue, stories, active, inactive, recent, past } = data;
   const live = stories.filter((s) => s.status !== "REMOVED");

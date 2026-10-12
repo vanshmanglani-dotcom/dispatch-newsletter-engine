@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { cronAuthorized, unauthorized, runJob } from "../../../../lib/auth";
-import { db, must, type Issue } from "../../../../lib/db";
+import { q, one, type Issue } from "../../../../lib/db";
 import { selectStories } from "../../../../lib/gemini";
 import { candidatesForWeek, getIssue, getStyleGuide, sendDraftToTelegram } from "../../../../lib/issue";
 import { weekKey } from "../../../../lib/time";
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const existing = await getIssue(wk);
     if (existing && !force) return { week: wk, skipped: `Issue already exists (${existing.status}). Use &force=1 to rebuild a PENDING draft.` };
     if (existing && existing.status !== "PENDING") return { week: wk, skipped: `Issue is ${existing.status}; cannot rebuild.` };
-    if (existing) must(await db().from("issues").delete().eq("id", existing.id));
+    if (existing) await q`delete from issues where id = ${existing.id}`;
 
     const { candidates, recentTitles, excluded } = await candidatesForWeek(wk);
     if (candidates.length < 12) {
@@ -28,12 +28,17 @@ export async function GET(req: NextRequest) {
 
     const sel = await selectStories(candidates, await getStyleGuide(), recentTitles);
 
-    const issue = must(await db().from("issues").insert({ week_key: wk, intro: sel.intro, status: "PENDING" }).select("*").single()) as Issue;
+    const issue = (await one<Issue>`insert into issues (week_key, intro, status) values (${wk}, ${sel.intro}, 'PENDING') returning *`)!;
     const rows = [
-      ...sel.stories.map((s, i) => ({ ...s, issue_id: issue.id, position: i, status: "PROPOSED" })),
-      ...sel.alternates.map((s, i) => ({ ...s, issue_id: issue.id, position: 100 + i, status: "ALTERNATE" })),
+      ...sel.stories.map((s, i) => ({ ...s, position: i, status: "PROPOSED" })),
+      ...sel.alternates.map((s, i) => ({ ...s, position: 100 + i, status: "ALTERNATE" })),
     ];
-    must(await db().from("issue_stories").insert(rows));
+    await q`
+      insert into issue_stories (issue_id, article_id, topic, reason, commentary, position, status)
+      select ${issue.id}::int, * from unnest(
+        ${rows.map((r) => r.article_id)}::int[], ${rows.map((r) => r.topic)}::text[], ${rows.map((r) => r.reason)}::text[],
+        ${rows.map((r) => r.commentary)}::text[], ${rows.map((r) => r.position)}::int[], ${rows.map((r) => r.status)}::text[])
+      on conflict (issue_id, article_id) do nothing`;
 
     const tg = await sendDraftToTelegram(issue);
     return {

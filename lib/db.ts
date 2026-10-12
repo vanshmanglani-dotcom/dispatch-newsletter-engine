@@ -1,14 +1,20 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { env } from "./env";
 
-let client: SupabaseClient | null = null;
-export function db(): SupabaseClient {
-  if (!client) {
-    client = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
-      auth: { persistSession: false },
-    });
-  }
-  return client;
+let client: NeonQueryFunction<false, false> | null = null;
+
+/** Tagged-template SQL against Neon Postgres over HTTPS (works in serverless). */
+export function sql() {
+  return (client ??= neon(env("DATABASE_URL")));
+}
+
+/** Convenience: run a query and return rows typed as T. */
+export async function q<T = Record<string, unknown>>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> {
+  return (await sql()(strings, ...values)) as T[];
+}
+export async function one<T = Record<string, unknown>>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | null> {
+  const rows = await q<T>(strings, ...values);
+  return rows[0] ?? null;
 }
 
 export type Article = {
@@ -23,11 +29,5 @@ export type Story = {
   id: number; issue_id: number; article_id: number; position: number; topic: string | null;
   reason: string | null; commentary: string | null;
   status: "PROPOSED" | "APPROVED" | "REMOVED" | "SWAPPED" | "ALTERNATE";
-  telegram_message_id: number | null; articles?: Article;
+  telegram_message_id: number | null;
 };
-
-/** Throws on Supabase errors so routes fail loudly instead of silently. */
-export function must<T>(res: { data: T; error: { message: string } | null }): T {
-  if (res.error) throw new Error(res.error.message);
-  return res.data;
-}

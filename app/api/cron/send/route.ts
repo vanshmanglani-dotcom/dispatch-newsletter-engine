@@ -1,6 +1,6 @@
 import { NextRequest, after } from "next/server";
 import { cronAuthorized, unauthorized, runJob } from "../../../../lib/auth";
-import { db, must } from "../../../../lib/db";
+import { q } from "../../../../lib/db";
 import { getIssue, getStories } from "../../../../lib/issue";
 import { renderNewsletter, sendEmail, type StoryWithArticle } from "../../../../lib/mail";
 import { weekKey } from "../../../../lib/time";
@@ -34,18 +34,18 @@ export async function GET(req: NextRequest) {
     }
 
     if (issue.status === "PENDING") {
-      must(await db().from("issues").update({ status: "SKIPPED" }).eq("id", issue.id));
+      await q`update issues set status = 'SKIPPED' where id = ${issue.id}`;
       await sendMessage(`🛑 The Dispatch for ${wk} was <b>not sent</b> — no confirmation received. Nothing went to subscribers.`).catch(() => undefined);
       return { sent: 0, reason: "Not confirmed by Shreya → skipped (never auto-sent)" };
     }
     if (!["CONFIRMED", "SENDING"].includes(issue.status)) return { sent: 0, reason: `Issue is ${issue.status}` };
-    if (issue.status === "CONFIRMED") must(await db().from("issues").update({ status: "SENDING" }).eq("id", issue.id));
+    if (issue.status === "CONFIRMED") await q`update issues set status = 'SENDING' where id = ${issue.id}`;
 
     const batchSize = Number(process.env.SEND_BATCH_SIZE || 40);
-    const done = must(await db().from("deliveries").select("subscriber_id").eq("issue_id", issue.id)) as { subscriber_id: number }[];
-    const doneIds = new Set(done.map((d) => d.subscriber_id));
-    const subs = (must(await db().from("subscribers").select("id, email, unsub_token").eq("status", "active").order("id")) as Sub[])
-      .filter((s) => !doneIds.has(s.id));
+    const subs = await q<Sub>`
+      select id, email, unsub_token from subscribers
+      where status = 'active' and id not in (select subscriber_id from deliveries where issue_id = ${issue.id})
+      order by id`;
     const batch = subs.slice(0, batchSize);
 
     let ok = 0, failed = 0;
@@ -55,10 +55,10 @@ export async function GET(req: NextRequest) {
       try {
         await sendEmail(s.email, subject, html, text, unsub);
         ok++;
-        await db().from("deliveries").insert({ issue_id: issue.id, subscriber_id: s.id, status: "sent" });
+        await q`insert into deliveries (issue_id, subscriber_id, status) values (${issue.id}, ${s.id}, 'sent') on conflict do nothing`;
       } catch (e) {
         failed++;
-        await db().from("deliveries").insert({ issue_id: issue.id, subscriber_id: s.id, status: "failed", error: (e as Error).message.slice(0, 300) });
+        await q`insert into deliveries (issue_id, subscriber_id, status, error) values (${issue.id}, ${s.id}, 'failed', ${(e as Error).message.slice(0, 300)}) on conflict do nothing`;
       }
     }
 
@@ -68,8 +68,8 @@ export async function GET(req: NextRequest) {
       const next = `${appUrl()}/api/cron/send?key=${encodeURIComponent(process.env.CRON_SECRET!)}&week=${wk}`;
       after(() => fetch(next).then(() => undefined).catch(() => undefined));
     } else {
-      const total = must(await db().from("deliveries").select("status").eq("issue_id", issue.id)) as { status: string }[];
-      must(await db().from("issues").update({ status: "SENT", sent_at: new Date().toISOString() }).eq("id", issue.id));
+      const total = await q<{ status: string }>`select status from deliveries where issue_id = ${issue.id}`;
+      await q`update issues set status = 'SENT', sent_at = now() where id = ${issue.id}`;
       await sendMessage(
         `📬 The Dispatch ${wk} is out: ${total.filter((t) => t.status === "sent").length} delivered, ${total.filter((t) => t.status === "failed").length} failed.`
       ).catch(() => undefined);

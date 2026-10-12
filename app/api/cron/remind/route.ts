@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { cronAuthorized, unauthorized, runJob } from "../../../../lib/auth";
-import { db, must } from "../../../../lib/db";
+import { q } from "../../../../lib/db";
 import { getIssue, controlKeyboard, liveStories } from "../../../../lib/issue";
 import { weekKey } from "../../../../lib/time";
 import { sendMessage } from "../../../../lib/telegram";
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       `⏰ <b>Reminder:</b> this week's Dispatch is still waiting for you.\n${live.length} stories in the draft. It will <b>not</b> go out on Thursday unless you confirm.`,
       controlKeyboard(issue)
     );
-    must(await db().from("issues").update({ reminder_sent_at: new Date().toISOString() }).eq("id", issue.id));
+    await q`update issues set reminder_sent_at = now() where id = ${issue.id}`;
     return { reminded: true };
   });
 }
