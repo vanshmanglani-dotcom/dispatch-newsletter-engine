@@ -11,7 +11,7 @@ function smtp() {
     service: "gmail",
     pool: true,
     maxConnections: 3,
-    auth: { user: env("GMAIL_USER"), pass: env("GMAIL_APP_PASSWORD") },
+    auth: { user: env("GMAIL_USER").trim(), pass: env("GMAIL_APP_PASSWORD").replace(/\s+/g, "") },
   }));
 }
 
@@ -77,7 +77,7 @@ export async function scanGmailBounces(days = 8): Promise<{ bounced: string[]; u
     host: "imap.gmail.com",
     port: 993,
     secure: true,
-    auth: { user: env("GMAIL_USER"), pass: env("GMAIL_APP_PASSWORD") },
+    auth: { user: env("GMAIL_USER").trim(), pass: env("GMAIL_APP_PASSWORD").replace(/\s+/g, "") },
     logger: false,
   });
   const bounced = new Set<string>();

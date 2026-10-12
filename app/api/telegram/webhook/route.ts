@@ -10,7 +10,7 @@ import { weekKey } from "../../../../lib/time";
 import { esc } from "../../../../lib/text";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type Update = {
   message?: { message_id: number; chat: { id: number }; text?: string; reply_to_message?: { message_id: number } };

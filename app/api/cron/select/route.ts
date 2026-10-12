@@ -7,7 +7,7 @@ import { weekKey } from "../../../../lib/time";
 import { sendMessage } from "../../../../lib/telegram";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /** Wednesday 3 PM IST: Gemini editorial pass → draft saved as PENDING → sent to Shreya on Telegram. */
 export async function GET(req: NextRequest) {
