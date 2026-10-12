@@ -349,9 +349,10 @@ main { margin: 0 var(--edge); position: relative; }
 .loader::before { content: ""; position: absolute; inset: 10px; border: 1px solid var(--rule); pointer-events: none; }
 .loader-out { transform: translateY(-100%); }
 .loader-art { position: absolute; left: 50%; top: 44%; width: min(70vw, 680px); transform: translate(-50%, -50%); }
-.loader-art .draw * { fill: none; stroke: var(--ink); stroke-width: 1; stroke-dasharray: 600; stroke-dashoffset: 600; animation: draw 2s var(--ease) forwards; }
+.loader-art .draw * { fill: none; stroke: var(--ink); stroke-width: 1; stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: draw 2s var(--ease) forwards; }
 .loader-art .draw *:nth-child(3n) { animation-delay: .15s; } .loader-art .draw *:nth-child(3n+1) { animation-delay: .3s; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
+.loader-art .draw rect { animation-duration: 2.2s; }
 .loader-dot { fill: var(--accent); animation: blink .6s steps(2) infinite; }
 .loader-scan { position: absolute; left: 10px; right: 10px; height: 1px; background: var(--accent); }
 .loader-scan span { position: absolute; left: 22px; bottom: 6px; font-size: 11px; color: var(--accent); }

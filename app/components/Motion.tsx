@@ -79,19 +79,26 @@ export default function Motion() {
       requestAnimationFrame(step);
     };
 
-    // ---------- reveal observer ----------
+    // ---------- reveals (scroll-checked, so fast scroll jumps never skip an element) ----------
+    let pending: HTMLElement[] = [];
+    let started = false;
+    const reveal = (el: HTMLElement) => {
+      el.classList.add("in");
+      if (el.dataset.count !== undefined) runCount(el);
+    };
+    const checkReveals = () => {
+      if (!started || !pending.length) return;
+      const vh = window.innerHeight;
+      pending = pending.filter((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.top < vh * 0.92 && (r.bottom > 0 || r.top < 0)) { reveal(el); return false; }
+        return true;
+      });
+    };
     const start = () => {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          const el = e.target as HTMLElement;
-          el.classList.add("in");
-          if (el.dataset.count !== undefined) runCount(el);
-          io.unobserve(el);
-        });
-      }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
-      $$("[data-reveal],[data-split],[data-count],[data-stagger]").forEach((el) => io.observe(el));
-      cleanups.push(() => io.disconnect());
+      started = true;
+      pending = $$("[data-reveal],[data-split],[data-count],[data-stagger]");
+      checkReveals();
     };
     if (root.classList.contains("is-loading")) {
       const mo = new MutationObserver(() => {
@@ -116,6 +123,7 @@ export default function Motion() {
       ticking = true;
       requestAnimationFrame(() => {
         ticking = false;
+        checkReveals();
         const vh = window.innerHeight;
         const max = document.documentElement.scrollHeight - vh;
         const p = max > 0 ? window.scrollY / max : 0;

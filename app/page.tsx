@@ -45,7 +45,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const live = stories.filter((s) => s.status !== "REMOVED");
   const topics = new Set(live.map((s) => s.topic)).size;
   const approved = live.filter((s) => s.status === "APPROVED").length;
-  const statusIdx = !issue ? 1 : issue.status === "PENDING" ? 4 : issue.status === "CONFIRMED" ? 5 : 6;
+  const statusIdx = !issue ? 1 : issue.status === "PENDING" ? 4 : issue.status === "CONFIRMED" ? 6 : issue.status === "SENT" ? 7 : 6;
 
   return (
     <>
