@@ -13,8 +13,17 @@ export const maxDuration = 60;
 export async function GET(req: NextRequest) {
   if (!cronAuthorized(req)) return unauthorized();
   const force = req.nextUrl.searchParams.get("force") === "1";
+  const dry = req.nextUrl.searchParams.get("dry") === "1";
   return runJob("select", async () => {
     const wk = weekKey();
+    if (dry) {
+      // Preview Gemini's picks without saving or messaging anyone.
+      const { candidates, recentTitles } = await candidatesForWeek(wk);
+      const sel = await selectStories(candidates, await getStyleGuide(), recentTitles);
+      const byId = new Map(candidates.map((c) => [c.id, c]));
+      return { dry: true, candidates: candidates.length, intro: sel.intro,
+        stories: sel.stories.map((s) => ({ title: byId.get(s.article_id)?.title, source: byId.get(s.article_id)?.source, topic: s.topic, reason: s.reason, commentary: s.commentary })) };
+    }
     const existing = await getIssue(wk);
     if (existing && !force) return { week: wk, skipped: `Issue already exists (${existing.status}). Use &force=1 to rebuild a PENDING draft.` };
     if (existing && existing.status !== "PENDING") return { week: wk, skipped: `Issue is ${existing.status}; cannot rebuild.` };

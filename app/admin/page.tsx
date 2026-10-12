@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 const JOBS = [
   { path: "/api/admin/migrate", label: "0 · Create database tables", hint: "One-time setup (safe to re-run)" },
   { path: "/api/cron/ingest", label: "1 · Ingest now", hint: "Pull live articles from all sources" },
+  { path: "/api/cron/select", extra: "&dry=1", label: "2a · Preview Gemini picks", hint: "Dry run: nothing saved or sent" },
   { path: "/api/cron/select", label: "2 · Run Gemini selection", hint: "Build draft + send to Telegram" },
   { path: "/api/cron/select", extra: "&force=1", label: "2b · Rebuild draft", hint: "Replace a PENDING draft" },
   { path: "/api/cron/remind", label: "3 · Send reminder", hint: "Only if not confirmed" },
