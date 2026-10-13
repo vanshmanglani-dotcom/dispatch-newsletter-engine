@@ -444,7 +444,7 @@ main { margin: 0 var(--edge); position: relative; }
 .tour-spot {
   position: fixed; pointer-events: none; border: 1px solid var(--accent);
   box-shadow: 0 0 0 200vmax rgba(27, 27, 25, .58); opacity: 0;
-  transition: top .55s var(--ease), left .55s var(--ease), width .55s var(--ease), height .55s var(--ease), opacity .4s;
+  transition: opacity .4s var(--ease);
 }
 .tour-spot.on { opacity: 1; }
 .tour-spot::after { content: ""; position: absolute; inset: -1px; border: 1px solid var(--accent); animation: tourpulse 1.8s var(--ease) infinite; }
@@ -456,7 +456,7 @@ main { margin: 0 var(--edge); position: relative; }
 .tour-tip {
   position: fixed; pointer-events: auto; background: var(--paper); color: var(--ink); border: 1px solid var(--ink);
   box-shadow: 8px 8px 0 var(--accent); padding: 0 18px 14px; opacity: 0; transform: translateY(12px);
-  transition: opacity .45s var(--ease), transform .55s var(--ease), top .55s var(--ease), left .55s var(--ease);
+  transition: opacity .45s var(--ease), transform .55s var(--ease);
 }
 .tour-tip.on { opacity: 1; transform: none; }
 .tour-tip.mobile { left: 12px !important; right: 12px; bottom: 16px; width: auto !important; top: auto !important; }
