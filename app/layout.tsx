@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Motion from "./components/Motion";
 import Loader from "./components/Loader";
+import Tour from "./components/Tour";
 
 
 export const metadata: Metadata = {
@@ -54,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span className="nav-corner" aria-hidden>⌟</span>
               </a>
             ))}
-            <a href="/admin" className="nav-cell nav-cta" data-scramble>
+            <a href="/admin" className="nav-cell nav-cta" data-scramble data-tour="admin">
               <span className="mono nav-n">05</span>
               <span className="mono nav-l">ADMIN</span>
               <span className="nav-arrow" aria-hidden>→</span>
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <main>{children}</main>
         <Motion />
+        <Tour />
       </body>
     </html>
   );

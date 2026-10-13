@@ -50,7 +50,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   return (
     <>
       {/* ================= HERO ================= */}
-      <section className="hero sec">
+      <section className="hero sec" data-tour="hero">
         <div className="hero-top">
           <span className="mono tag" data-reveal>VOL. {wk.slice(0, 4)} / ISSUE {wk.slice(5)}</span>
           <span className="mono tag live-tag" data-reveal><i className="pulse" /> LIVE PIPELINE</span>
@@ -66,7 +66,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             and then waits. Nothing reaches a single inbox until a human says so.
           </p>
 
-          <dl className="spec mono" data-reveal="left">
+          <dl className="spec mono" data-reveal="left" data-tour="spec">
             <div><dt>WEEK</dt><dd>: {wk}</dd></div>
             <div><dt>STATUS</dt><dd>: {issue ? <span className={`pill ${issue.status}`}>{issue.status}</span> : "AWAITING DRAFT"}</dd></div>
             <div><dt>SOURCES</dt><dd>: {RSS_SOURCES.length} LIVE FEEDS</dd></div>
@@ -84,7 +84,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </ol>
         </div>
 
-        <div className="stats">
+        <div className="stats" data-tour="stats">
           {[
             { n: week, l: "ARTICLES THIS WEEK" },
             { n: total, l: "STORED · DEDUPED" },
@@ -100,7 +100,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
 
         {recent.length > 0 && (
-          <div className="marquee" aria-label="Latest ingested headlines">
+          <div className="marquee" aria-label="Latest ingested headlines" data-tour="marquee">
             <div className="marquee-track">
               {[0, 1].map((k) => (
                 <div className="marquee-set" key={k} aria-hidden={k === 1}>
@@ -115,7 +115,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </section>
 
       {/* ================= PIPELINE (pinned) ================= */}
-      <section id="pipeline" className="pin" data-pin={STAGES.length}>
+      <section id="pipeline" className="pin" data-pin={STAGES.length} data-tour="pipeline">
         <div className="pin-stage">
           <div className="pin-head">
             <span className="mono tag">THE PIPELINE</span>
@@ -182,6 +182,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               key={s.id}
               className={`card ${s.status === "REMOVED" ? "removed" : ""}`}
               data-tilt data-reveal style={{ ["--d" as string]: `${(i % 2) * 120}ms` }}
+              data-tour={i === 0 ? "card" : undefined}
             >
               <div className="card-glow" aria-hidden />
               <header className="card-top">
@@ -202,7 +203,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
 
         {issue && (
-          <a className="big-link" href={`/issue/${issue.week_key}`} data-magnetic data-cursor="PREVIEW">
+          <a className="big-link" href={`/issue/${issue.week_key}`} data-magnetic data-cursor="PREVIEW" data-tour="preview">
             <span className="mono">VIEW EMAIL PREVIEW</span><i>→</i>
           </a>
         )}
@@ -210,7 +211,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       {/* ================= SUBSCRIBE + ARCHIVE ================= */}
       <section id="archive" className="sec split">
-        <div className="sub-box" data-reveal>
+        <div className="sub-box" data-reveal data-tour="subscribe">
           <span className="mono tag">03 · SUBSCRIBE</span>
           <h2 className="sec-title" data-split>Get the Dispatch.</h2>
           <p className="muted">Eight to ten stories, every Thursday. Picked by a machine, approved by a human.</p>
@@ -246,7 +247,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </section>
 
       {/* ================= WIRE ================= */}
-      <section id="wire" className="sec wire">
+      <section id="wire" className="sec wire" data-tour="wire">
         <div className="sec-head">
           <span className="mono tag" data-reveal>04 · THE WIRE</span>
           <h2 className="sec-title" data-split>Freshly ingested. Live.</h2>
