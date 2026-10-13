@@ -484,6 +484,7 @@ main { margin: 0 var(--edge); position: relative; }
   padding: 12px 16px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); font-size: 11px; letter-spacing: .08em;
   cursor: pointer; box-shadow: 5px 5px 0 var(--accent); transition: transform .3s var(--ease), box-shadow .3s var(--ease);
 }
+.tour-hint-mark { box-shadow: 0 10px 30px -12px rgba(27,27,25,.5); }
 .tour-launch:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--accent); }
 .tour-launch-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 var(--accent); animation: launchping 1.8s infinite; }
 @keyframes launchping { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 31, .6); } 100% { box-shadow: 0 0 0 10px rgba(255, 75, 31, 0); } }
@@ -500,7 +501,7 @@ main { margin: 0 var(--edge); position: relative; }
   display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer;
   margin-bottom: 52px; animation: hintbob 2.4s var(--ease-io) infinite;
 }
-.tour-hint-new { font-size: 10px; letter-spacing: .14em; color: var(--ink-2); }
+.tour-hint-new { font-size: 10px; letter-spacing: .14em; color: var(--ink); background: var(--paper); border: 1px solid var(--ink); padding: 3px 7px; }
 .tour-hint-mark {
   position: relative; font: 800 clamp(18px, 1.8vw, 24px)/1 var(--sans); letter-spacing: -.02em; text-transform: uppercase; color: var(--ink);
   padding: 6px 10px; isolation: isolate;

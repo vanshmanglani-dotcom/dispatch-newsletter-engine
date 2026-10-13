@@ -131,7 +131,7 @@ export default function Tour() {
         <div className={`tour-hint ${inHero ? "on" : ""}`} aria-hidden={!inHero}>
           <button className="tour-hint-label mono" onClick={start} tabIndex={inHero ? 0 : -1}>
             <span className="tour-hint-new">NEW HERE?</span>
-            <span className="tour-hint-mark">40-second guided tour</span>
+            <span className="tour-hint-mark">45-second guided tour</span>
           </button>
           <svg className="tour-hint-arrow" viewBox="0 0 120 90" aria-hidden>
             <path d="M8 10 C 46 6, 92 22, 104 70" />
