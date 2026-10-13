@@ -21,6 +21,19 @@ export default function Admin() {
   const [style, setStyle] = useState("");
   const [last, setLast] = useState("IDLE");
   const typer = useRef(0);
+  const [loadedFor, setLoadedFor] = useState("");
+
+  // Once a valid key is entered, load the current style guide into the box.
+  useEffect(() => {
+    if (!key || key === loadedFor) return;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/style?key=${encodeURIComponent(key)}`);
+        if (res.ok) { const j = await res.json(); setStyle(j.content || ""); setLoadedFor(key); }
+      } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [key, loadedFor]);
 
   useEffect(() => { try { setKey(sessionStorage.getItem("dispatch-key") || ""); } catch {} }, []);
   const saveKey = (k: string) => { setKey(k); try { sessionStorage.setItem("dispatch-key", k); } catch {} };
@@ -92,9 +105,17 @@ export default function Admin() {
       <div style={{ marginTop: 56 }} data-reveal>
         <span className="mono tag">STYLE GUIDE</span>
         <h2 className="sec-title" style={{ margin: "12px 0 10px", fontSize: "clamp(30px,4vw,56px)" }}>Shreya&apos;s voice.</h2>
-        <p className="muted">Paste her editorial voice. Leave empty to keep the current one.</p>
-        <textarea className="style-ta" value={style} onChange={(e) => setStyle(e.target.value)} placeholder="THE DISPATCH — EDITORIAL STYLE GUIDE…" />
-        <p><button className="btn" disabled={!!busy || !key || style.length < 50} onClick={saveStyle} data-magnetic><span>SAVE STYLE GUIDE</span><i>→</i></button></p>
+        <p className="muted">
+          The rules Gemini follows when it picks stories and writes commentary in Shreya&apos;s voice. Enter the admin key above to load the
+          current guide, edit it, then save. The next Gemini run uses the new version.
+        </p>
+        <textarea className="style-ta" value={style} onChange={(e) => setStyle(e.target.value)} placeholder={key ? "Loading current style guide…" : "Enter the admin key above to load the current style guide."} />
+        <p style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+          <button className="btn" disabled={!!busy || !key || style.length < 50} onClick={saveStyle} data-magnetic><span>SAVE STYLE GUIDE</span><i>→</i></button>
+          <span className="mono muted" style={{ fontSize: 11 }}>
+            {!key ? "LOCKED: ENTER ADMIN KEY ABOVE" : style.length < 50 ? `TOO SHORT: ${style.length}/50 CHARACTERS` : `${style.length} CHARACTERS · READY TO SAVE`}
+          </span>
+        </p>
       </div>
     </section>
   );
