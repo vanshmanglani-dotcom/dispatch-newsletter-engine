@@ -488,3 +488,38 @@ main { margin: 0 var(--edge); position: relative; }
 .tour-launch-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 var(--accent); animation: launchping 1.8s infinite; }
 @keyframes launchping { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 31, .6); } 100% { box-shadow: 0 0 0 10px rgba(255, 75, 31, 0); } }
 @media (max-width: 640px) { .tour-launch { right: 16px; bottom: 16px; padding: 10px 12px; } }
+
+/* ---------- hero hint pointing at the tour button ---------- */
+.tour-hint {
+  position: fixed; right: 64px; bottom: 82px; z-index: 89; display: flex; align-items: flex-end; gap: 4px;
+  pointer-events: none; opacity: 0; transform: translateY(16px) rotate(-2deg); transition: opacity .5s var(--ease), transform .7s var(--ease);
+}
+.tour-hint.on { opacity: 1; transform: rotate(-2deg); }
+.tour-hint.on .tour-hint-label { pointer-events: auto; }
+.tour-hint-label {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer;
+  margin-bottom: 52px; animation: hintbob 2.4s var(--ease-io) infinite;
+}
+.tour-hint-new { font-size: 10px; letter-spacing: .14em; color: var(--ink-2); }
+.tour-hint-mark {
+  position: relative; font: 800 clamp(18px, 1.8vw, 24px)/1 var(--sans); letter-spacing: -.02em; text-transform: uppercase; color: var(--ink);
+  padding: 6px 10px; isolation: isolate;
+}
+.tour-hint-mark::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--accent); opacity: .9;
+  transform: skew(-8deg) scaleX(0); transform-origin: 0 50%; transition: transform .9s var(--ease) .3s; border-radius: 2px;
+}
+.tour-hint.on .tour-hint-mark::before { transform: skew(-8deg) scaleX(1); }
+.tour-hint.on .tour-hint-mark { color: #fff; transition: color .3s .7s; }
+.tour-hint-label:hover .tour-hint-mark::before { background: var(--ink); }
+.tour-hint-arrow { width: 76px; height: 58px; margin-bottom: -6px; overflow: visible; animation: hintbob 2.4s var(--ease-io) infinite .15s; }
+.tour-hint-arrow path { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 140; stroke-dashoffset: 140; }
+.tour-hint.on .tour-hint-arrow path { animation: hintdraw 1s var(--ease) .6s forwards; }
+.tour-hint.on .tour-hint-arrow path + path { animation-delay: 1.3s; }
+@keyframes hintdraw { to { stroke-dashoffset: 0; } }
+@keyframes hintbob { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(4px, 5px); } }
+@media (max-width: 640px) {
+  .tour-hint { right: 40px; bottom: 66px; }
+  .tour-hint-label { margin-bottom: 44px; }
+  .tour-hint-arrow { width: 56px; height: 44px; }
+}

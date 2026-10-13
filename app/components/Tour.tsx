@@ -114,13 +114,34 @@ export default function Tour() {
     return () => window.removeEventListener("keydown", k);
   }, [open, i, go, close]);
 
+  // the hint label only shows while the hero is on screen
+  const [inHero, setInHero] = useState(true);
+  useEffect(() => {
+    const on = () => setInHero(window.scrollY < window.innerHeight * 0.55);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
+
   if (pathname !== "/") return null;
 
   if (!open) {
     return (
-      <button className="tour-launch mono" onClick={start} data-cursor="TOUR" aria-label="Start guided tour">
-        <span className="tour-launch-dot" /> TAKE THE TOUR
-      </button>
+      <>
+        <div className={`tour-hint ${inHero ? "on" : ""}`} aria-hidden={!inHero}>
+          <button className="tour-hint-label mono" onClick={start} tabIndex={inHero ? 0 : -1}>
+            <span className="tour-hint-new">NEW HERE?</span>
+            <span className="tour-hint-mark">40-second guided tour</span>
+          </button>
+          <svg className="tour-hint-arrow" viewBox="0 0 120 90" aria-hidden>
+            <path d="M8 10 C 46 6, 92 22, 104 70" />
+            <path d="M92 60 L 105 74 L 114 57" />
+          </svg>
+        </div>
+        <button className="tour-launch mono" onClick={start} data-cursor="TOUR" aria-label="Start guided tour">
+          <span className="tour-launch-dot" /> TAKE THE TOUR
+        </button>
+      </>
     );
   }
 
