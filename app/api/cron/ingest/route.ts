@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { cronAuthorized, unauthorized, runJob } from "../../../../lib/auth";
+import { cronAuthorized, demoAuthorized, unauthorized, runJob } from "../../../../lib/auth";
 import { q } from "../../../../lib/db";
 import { fetchAllSources } from "../../../../lib/sources";
 import { normalizeUrl, normalizeTitle, sha1, similarity, NEAR_DUP } from "../../../../lib/text";
@@ -11,7 +11,7 @@ export const maxDuration = 60;
 
 /** Mon–Wed: pull live articles from 20+ sources, dedupe, store. */
 export async function GET(req: NextRequest) {
-  if (!cronAuthorized(req)) return unauthorized();
+  if (!cronAuthorized(req) && !demoAuthorized(req)) return unauthorized();
   return runJob("ingest", async () => {
     const wk = weekKey();
     const { articles, report } = await fetchAllSources();

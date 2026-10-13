@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { cronAuthorized, unauthorized, runJob } from "../../../../lib/auth";
+import { cronAuthorized, demoAuthorized, unauthorized, runJob } from "../../../../lib/auth";
 import { q, one, type Issue } from "../../../../lib/db";
 import { selectStories } from "../../../../lib/gemini";
 import { candidatesForWeek, getIssue, getStyleGuide, sendDraftToTelegram } from "../../../../lib/issue";
@@ -11,9 +11,10 @@ export const maxDuration = 300;
 
 /** Wednesday 3 PM IST: Gemini editorial pass → draft saved as PENDING → sent to Shreya on Telegram. */
 export async function GET(req: NextRequest) {
-  if (!cronAuthorized(req)) return unauthorized();
   const force = req.nextUrl.searchParams.get("force") === "1";
   const dry = req.nextUrl.searchParams.get("dry") === "1";
+  // The public demo key may only preview (dry run): nothing saved, nothing sent.
+  if (!cronAuthorized(req) && !(dry && demoAuthorized(req))) return unauthorized();
   return runJob("select", async () => {
     const wk = weekKey();
     if (dry) {

@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-const JOBS = [
+const DEMO_KEY = "dispatch-demo";
+
+const JOBS: { path: string; label: string; hint: string; extra?: string; hot?: boolean; demo?: boolean }[] = [
   { path: "/api/admin/migrate", label: "Create database tables", hint: "One-time setup (safe to re-run)" },
-  { path: "/api/cron/ingest", label: "Ingest now", hint: "Pull live articles from all sources" },
-  { path: "/api/cron/select", extra: "&dry=1", label: "Preview Gemini picks", hint: "Dry run: nothing saved or sent" },
+  { path: "/api/cron/ingest", label: "Ingest now", hint: "Pull live articles from all sources", demo: true },
+  { path: "/api/cron/select", extra: "&dry=1", label: "Preview Gemini picks", hint: "Dry run: nothing saved or sent", demo: true },
   { path: "/api/cron/select", label: "Run Gemini selection", hint: "Build draft + send to Telegram" },
   { path: "/api/cron/select", extra: "&force=1", label: "Rebuild draft", hint: "Replace a PENDING draft" },
   { path: "/api/cron/remind", label: "Send reminder", hint: "Only if not confirmed" },
@@ -53,6 +55,10 @@ export default function Admin() {
     return () => cancelAnimationFrame(typer.current);
   }, [out]);
 
+  const isDemo = key === DEMO_KEY;
+  const [autoMsg, setAutoMsg] = useState("");
+  const autoKey = () => { saveKey(DEMO_KEY); setLoadedFor(""); setAutoMsg("✓ DEMO KEY ADDED · INGEST + PREVIEW UNLOCKED"); };
+
   async function run(path: string, label: string, extra = "") {
     setBusy(label); setLast(label.toUpperCase()); setOut(`> ${path}${extra.replace("&", "?")}\n  running…`);
     try {
@@ -75,6 +81,13 @@ export default function Admin() {
         The same endpoints Vercel Cron calls on schedule. Sending to subscribers still refuses unless Shreya has confirmed the issue in Telegram.
       </p>
 
+      <div className="autokey" data-reveal>
+        <button type="button" className="btn ghost" onClick={autoKey} data-magnetic data-cursor="FILL">
+          <span>AUTO-ADD DEMO KEY</span><i>↓</i>
+        </button>
+        <span className="mono autokey-msg">{autoMsg || "Unlocks safe actions only. Sending, rebuilding and editing need the real admin key."}</span>
+      </div>
+
       <label className="field console-key" data-reveal>
         <input type="password" placeholder=" " value={key} onChange={(e) => saveKey(e.target.value)} />
         <span className="mono">ADMIN KEY (CRON_SECRET)</span>
@@ -86,13 +99,13 @@ export default function Admin() {
           <button
             key={j.label}
             className={`job ${j.hot ? "hot" : ""} ${busy === j.label ? "running" : ""}`}
-            disabled={!!busy || !key}
+            disabled={!!busy || !key || (isDemo && !j.demo)}
             onClick={() => run(j.path, j.label, j.extra)}
             data-cursor={key ? "RUN" : undefined}
           >
             <span className="mono job-n">{String(i).padStart(2, "0")}</span>
             <span className="job-l">{j.label}</span>
-            <span className="mono job-h">{j.hint}</span>
+            <span className="mono job-h">{isDemo && !j.demo ? "NEEDS REAL ADMIN KEY" : j.hint}</span>
           </button>
         ))}
       </div>
@@ -111,9 +124,9 @@ export default function Admin() {
         </p>
         <textarea className="style-ta" value={style} onChange={(e) => setStyle(e.target.value)} placeholder={key ? "Loading current style guide…" : "Enter the admin key above to load the current style guide."} />
         <p style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-          <button className="btn" disabled={!!busy || !key || style.length < 50} onClick={saveStyle} data-magnetic><span>SAVE STYLE GUIDE</span><i>→</i></button>
+          <button className="btn" disabled={!!busy || !key || isDemo || style.length < 50} onClick={saveStyle} data-magnetic><span>SAVE STYLE GUIDE</span><i>→</i></button>
           <span className="mono muted" style={{ fontSize: 11 }}>
-            {!key ? "LOCKED: ENTER ADMIN KEY ABOVE" : style.length < 50 ? `TOO SHORT: ${style.length}/50 CHARACTERS` : `${style.length} CHARACTERS · READY TO SAVE`}
+            {!key ? "LOCKED: ENTER ADMIN KEY ABOVE" : isDemo ? "READ-ONLY WITH DEMO KEY" : style.length < 50 ? `TOO SHORT: ${style.length}/50 CHARACTERS` : `${style.length} CHARACTERS · READY TO SAVE`}
           </span>
         </p>
       </div>

@@ -390,7 +390,9 @@ main { margin: 0 var(--edge); position: relative; }
    ========================================================= */
 .console { padding: clamp(40px, 6vw, 80px) var(--gut); }
 .console-title { margin: 14px 0 10px; font: 800 clamp(44px, 8vw, 128px)/.88 var(--sans); letter-spacing: -.045em; text-transform: uppercase; }
-.console-key { margin: clamp(24px, 4vw, 48px) 0; max-width: 560px; }
+.console-key { margin: 18px 0 clamp(24px, 4vw, 48px); max-width: 560px; }
+.autokey { display: flex; align-items: center; gap: 16px; margin-top: clamp(24px, 4vw, 40px); flex-wrap: wrap; }
+.autokey-msg { font-size: 11px; color: var(--ink-2); max-width: 46ch; }
 .jobs { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
 @media (max-width: 1000px) { .jobs { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 520px) { .jobs { grid-template-columns: 1fr; } }

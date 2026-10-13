@@ -9,6 +9,12 @@ export function cronAuthorized(req: NextRequest): boolean {
   return header === `Bearer ${secret}` || key === secret;
 }
 
+/** Public demo key: lets visitors run only harmless actions (ingest, Gemini dry run, read style guide). Not a secret. */
+export const DEMO_KEY = "dispatch-demo";
+export function demoAuthorized(req: NextRequest): boolean {
+  return req.nextUrl.searchParams.get("key") === DEMO_KEY;
+}
+
 export const unauthorized = () => NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
 export async function runJob(name: string, fn: () => Promise<unknown>) {
