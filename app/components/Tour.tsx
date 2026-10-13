@@ -17,7 +17,7 @@ const STEPS: Step[] = [
   { target: "admin", title: "Run it yourself", body: "Open Admin and tap 'Auto-add demo key' to pull live news or preview Gemini's picks, safely." },
 ];
 
-const DURATION = 6500;
+const DURATION = 4000;
 const KEY = "dispatch-tour-seen";
 
 export default function Tour() {
